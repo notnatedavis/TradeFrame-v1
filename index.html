@@ -10,7 +10,10 @@
 <body>
   <header>
     <h1>TradeFrame</h1>
+    <div id="search-bar"></div>
+    <button id="settings-btn" class="settings-btn" aria-label="Settings">⚙️</button>
     <p id="last-updated">Fetching data…</p>
+    <button id="retry-btn" class="retry-btn hidden" aria-label="Retry loading data">Retry</button>
   </header>
   <main>
     <section id="summary" class="card"></section>
@@ -19,6 +22,7 @@
     </section>
     <section id="table-container" class="card"></section>
   </main>
+  <div id="settings-panel"></div>
   <footer>
     <p>Data provided by Twelve Data (demo key)</p>
   </footer>
