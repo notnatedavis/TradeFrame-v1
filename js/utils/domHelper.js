@@ -2,8 +2,8 @@
 
 /**
  * Creates an HTML element with optional class.
- * @param {string} tag - HTML tag name.
- * @param {string} [className] - CSS class.
+ * @param {string} tag
+ * @param {string} [className]
  * @returns {HTMLElement}
  */
 export function createElementWithClass(tag, className) {
@@ -41,4 +41,14 @@ export function setText(elementId, text) {
 export function toggleClass(elementId, className, force) {
   const el = document.getElementById(elementId);
   if (el) el.classList.toggle(className, force);
+}
+
+/**
+ * Sets innerHTML safely (assumes trusted content).
+ * @param {string} elementId
+ * @param {string} html
+ */
+export function setHTML(elementId, html) {
+  const el = document.getElementById(elementId);
+  if (el) el.innerHTML = html;
 }

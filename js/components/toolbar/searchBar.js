@@ -1,11 +1,11 @@
-/* js/components/searchBar.js */
+/* js/components/toolbar/searchBar.js */
 
-import { createElementWithClass } from '../utils/domHelper.js';
-import { setSymbol } from '../state.js';
+import { createElementWithClass } from '../../utils/domHelper.js';
+import { setSymbol } from '../../state.js';
 
 /**
  * Renders a stock symbol search input with a submit button.
- * @param {string} containerId - ID of the container element.
+ * @param {string} containerId
  */
 export function renderSearchBar(containerId) {
   const container = document.getElementById(containerId);
@@ -15,7 +15,7 @@ export function renderSearchBar(containerId) {
 
   const input = createElementWithClass('input', 'search-input');
   input.type = 'text';
-  input.placeholder = 'Enter stock symbol (e.g., AAPL)';
+  input.placeholder = 'Enter symbol (e.g. AAPL)';
   input.setAttribute('aria-label', 'Stock symbol');
 
   const button = createElementWithClass('button', 'search-button');

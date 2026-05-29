@@ -1,31 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TradeFrame – Live Stock Dashboard</title>
-  <link rel="stylesheet" href="css/styles.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TradeFrame – Stock Dashboard</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
 </head>
 <body>
-  <header>
-    <h1>TradeFrame</h1>
-    <div id="search-bar"></div>
-    <button id="settings-btn" class="settings-btn" aria-label="Settings">⚙️</button>
-    <p id="last-updated">Fetching data…</p>
-    <button id="retry-btn" class="retry-btn hidden" aria-label="Retry loading data">Retry</button>
-  </header>
-  <main>
-    <section id="summary" class="card"></section>
-    <section id="chart-container" class="card">
-      <canvas id="price-chart"></canvas>
-    </section>
-    <section id="table-container" class="card"></section>
-  </main>
-  <div id="settings-panel"></div>
-  <footer>
-    <p>Data provided by Twelve Data (demo key)</p>
-  </footer>
+  <div id="app">
+    <header id="app-header"></header>
+    <nav id="tab-nav"></nav>
+    <main>
+      <div id="toolbar">
+        <div id="search-bar"></div>
+        <div id="range-selector"></div>
+        <div id="refresh-btn"></div>
+      </div>
+
+      <!-- Tab panels -->
+      <section id="panel-dashboard" class="tab-panel">
+        <div id="summary" class="summary-container"></div>
+      </section>
+      <section id="panel-chart" class="tab-panel hidden">
+        <div class="chart-container">
+          <canvas id="price-chart"></canvas>
+        </div>
+      </section>
+      <section id="panel-table" class="tab-panel hidden">
+        <div id="table-container" class="table-wrapper"></div>
+      </section>
+    </main>
+    <footer id="app-footer"></footer>
+  </div>
+
   <script type="module" src="js/app.js"></script>
 </body>
 </html>

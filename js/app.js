@@ -1,75 +1,114 @@
 /* js/app.js */
 
 import { fetchStockData } from './services/stockService.js';
-import { renderSummaryCard } from './components/summaryCard.js';
-import { renderStockTable } from './components/stockTable.js';
-import { renderStockChart } from './components/stockChart.js';
-import { renderSearchBar } from './components/searchBar.js';
-import { renderSettingsPanel, showPanel } from './components/settingsPanel.js';
-import { setText, toggleClass } from './utils/domHelper.js';
-import { getState, setSymbol, setStockData, subscribe } from './state.js';
-import { REFRESH_INTERVAL_MS } from './config.js';
+import { getCachedData, setCachedData } from './services/cacheService.js';
+import { renderHeader } from './components/layout/header.js';
+import { renderTabNav } from './components/layout/tabNav.js';
+import { renderFooter, setFooterMessage } from './components/layout/footer.js';
+import { renderSearchBar } from './components/toolbar/searchBar.js';
+import { renderRangeSelector } from './components/toolbar/rangeSelector.js';
+import { renderRefreshButton } from './components/toolbar/refreshButton.js';
+import { renderSummaryCard } from './components/dashboard/summaryCard.js';
+import { renderStockChart } from './components/chart/stockChart.js';
+import { renderStockTable } from './components/table/stockTable.js';
+import { renderSettingsPanel, showPanel } from './components/settings/settingsPanel.js';
+import { getState, setStockData, subscribe } from './state.js';
+
+let abortController = null;
 
 /**
- * Main application controller.
- * Renders static UI, binds state changes, and manages refresh.
+ * Main controller: initialises layout, binds state, handles data flow.
  */
 async function init() {
-  // Render static parts once
+  // Render static layout
+  renderHeader('app-header');
+  renderFooter('app-footer');
+  renderTabNav('tab-nav', onTabChange);
   renderSearchBar('search-bar');
-  renderSettingsPanel('settings-panel');
+  renderRangeSelector('range-selector');
+  renderRefreshButton('refresh-btn');
+  renderSettingsPanel(); // modal appended to body
 
-  // Settings button handler
-  document.getElementById('settings-btn').addEventListener('click', showPanel);
+  // Global settings button
+  document.getElementById('global-settings-btn')?.addEventListener('click', showPanel);
 
-  // Fetch initial data using symbol from state
-  await fetchAndRender();
+  // Manual refresh event
+  document.addEventListener('tradeframe:refresh', () => forceRefresh());
 
-  // Subscribe to symbol changes → refetch & render
+  // Initial data load (cache-first)
+  await loadData();
+
+  // Subscribe to symbol/range changes
   subscribe((newState, oldState) => {
-    if (newState.symbol !== oldState?.symbol) {
-      fetchAndRender();
+    if (newState.symbol !== oldState?.symbol || newState.range !== oldState?.range) {
+      loadData();
     }
   });
-
-  // Periodic refresh (only re‑fetch, keep same symbol)
-  setInterval(async () => {
-    await fetchAndRender();
-  }, REFRESH_INTERVAL_MS);
 }
 
-async function fetchAndRender() {
-  const { symbol } = getState();
+function onTabChange(tabId) {
+  const state = getState();
+  // Lazy render: if data exists, render corresponding view
+  if (state.values.length) {
+    if (tabId === 'dashboard') renderSummaryCard('summary');
+    else if (tabId === 'chart')   renderStockChart('price-chart', state.values);
+    else if (tabId === 'table')   renderStockTable('table-container', state.values);
+  }
+}
+
+/**
+ * Fetches data with cache-first strategy.
+ */
+async function loadData(force = false) {
+  const { symbol, range } = getState();
+  setFooterMessage('Loading…');
+
+  // Cancel any ongoing request
+  if (abortController) abortController.abort();
+  abortController = new AbortController();
+
+  // Try cache unless force refresh
+  if (!force) {
+    const cached = getCachedData(symbol, range);
+    if (cached) {
+      setStockData({ values: cached.values, latest: cached.latest });
+      updateAllViews();
+      setFooterMessage(`Last updated: ${new Date(cached.cachedAt).toLocaleTimeString()} (cached)`);
+      return;
+    }
+  }
+
   try {
-    setText('last-updated', 'Loading…');
-    const { values } = await fetchStockData(symbol);
-
+    const { values, latest } = await fetchStockData(symbol, range, abortController.signal);
     if (!values.length) throw new Error('No data returned');
-
-    const latest = values[values.length - 1];
     setStockData({ values, latest });
-
-    renderSummaryCard('summary', latest);
-    renderStockChart('price-chart', values);
-    renderStockTable('table-container', values);
-
-    const now = new Date().toLocaleTimeString();
-    setText('last-updated', `Last updated: ${now}`);
-    toggleClass('retry-btn', 'hidden', true); // hide retry button
+    setCachedData(symbol, range, { values, latest });
+    setFooterMessage(`Last updated: ${new Date().toLocaleTimeString()}`);
+    updateAllViews();
   } catch (error) {
+    if (error.message === 'Request aborted') return; // newer request superseded
     console.error('Dashboard error:', error);
-    setText('last-updated', `Error: ${error.message}`);
-    toggleClass('retry-btn', 'hidden', false);
+    setFooterMessage(`Error: ${error.message}`);
+    // Keep last successful data if available
+  } finally {
+    abortController = null;
   }
 }
 
-// Add retry button logic
-document.addEventListener('DOMContentLoaded', () => {
-  const retryBtn = document.getElementById('retry-btn');
-  if (retryBtn) {
-    retryBtn.addEventListener('click', fetchAndRender);
-  }
-});
+/** Force refresh ignoring cache */
+function forceRefresh() {
+  loadData(true);
+}
+
+/** Renders the currently visible tab */
+function updateAllViews() {
+  const activeTab = document.querySelector('.tab-btn.active')?.dataset.tab || 'dashboard';
+  const state = getState();
+  if (!state.values.length) return;
+  if (activeTab === 'dashboard') renderSummaryCard('summary');
+  else if (activeTab === 'chart')   renderStockChart('price-chart', state.values);
+  else if (activeTab === 'table')   renderStockTable('table-container', state.values);
+}
 
 // Boot
 init();
